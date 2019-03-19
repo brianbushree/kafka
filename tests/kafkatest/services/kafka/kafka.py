@@ -250,7 +250,9 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
     def start_node(self, node):
 
         # VERY IMPORTANT!
-        node.account.ssh("sudo sysctl -w vm.max_map_count=800000")
+        node.account.ssh("sudo sysctl -w vm.max_map_count=10000000")
+        node.account.ssh("sudo sysctl -w fs.file-max=10000000")
+        node.account.ssh("sudo sed -i -e \"s/nofile [0-9]\+/nofile 10000000/g\" /etc/security/limits.conf")
 
         node.account.mkdirs(KafkaService.PERSISTENT_ROOT)
         prop_file = self.prop_file(node)
