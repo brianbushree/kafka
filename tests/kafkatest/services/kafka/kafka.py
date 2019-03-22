@@ -55,18 +55,6 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
         "kafka_server_start_stdout_stderr": {
             "path": STDOUT_STDERR_CAPTURE,
             "collect_default": True},
-        "kafka_operational_logs_info": {
-            "path": OPERATIONAL_LOG_INFO_DIR,
-            "collect_default": True},
-        "kafka_operational_logs_debug": {
-            "path": OPERATIONAL_LOG_DEBUG_DIR,
-            "collect_default": False},
-        "kafka_data_1": {
-            "path": DATA_LOG_DIR_1,
-            "collect_default": False},
-        "kafka_data_2": {
-            "path": DATA_LOG_DIR_2,
-            "collect_default": False},
         "kafka_heap_dump_file": {
             "path": HEAP_DUMP_FILE,
             "collect_default": True}
