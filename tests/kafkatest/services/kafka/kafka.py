@@ -75,18 +75,6 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
         "kafka_server_start_stdout_stderr": {
             "path": STDOUT_STDERR_CAPTURE,
             "collect_default": True},
-        "kafka_operational_logs_info": {
-            "path": OPERATIONAL_LOG_INFO_DIR,
-            "collect_default": True},
-        "kafka_operational_logs_debug": {
-            "path": OPERATIONAL_LOG_DEBUG_DIR,
-            "collect_default": False},
-        "kafka_data_1": {
-            "path": DATA_LOG_DIR_1,
-            "collect_default": False},
-        "kafka_data_2": {
-            "path": DATA_LOG_DIR_2,
-            "collect_default": False},
         "kafka_heap_dump_file": {
             "path": HEAP_DUMP_FILE,
             "collect_default": True}
@@ -325,8 +313,11 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
         cmd += "export KAFKA_LOG4J_OPTS=\"-Dlog4j.configuration=file:%s\"; " % self.LOG4J_CONFIG
         heap_kafka_opts = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=%s" % \
                           self.logs["kafka_heap_dump_file"]["path"]
+        prod_kafka_opts = ("-Xms20g -Xmx20g -XX:MetaspaceSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=20 "
+                           "-XX:InitiatingHeapOccupancyPercent=35 -XX:G1HeapRegionSize=16M "
+                           "-XX:MinMetaspaceFreeRatio=50 -XX:MaxMetaspaceFreeRatio=80")
         other_kafka_opts = self.security_config.kafka_opts.strip('\"')
-        cmd += "export KAFKA_OPTS=\"%s %s\"; " % (heap_kafka_opts, other_kafka_opts)
+        cmd += "export KAFKA_OPTS=\"%s %s %s\"; " % (heap_kafka_opts, prod_kafka_opts, other_kafka_opts)
         cmd += "%s %s 1>> %s 2>> %s &" % \
                (self.path.script("kafka-server-start.sh", node),
                 KafkaService.CONFIG_FILE,
@@ -335,6 +326,12 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
         return cmd
 
     def start_node(self, node):
+
+        # VERY IMPORTANT!
+        node.account.ssh("sudo sysctl -w vm.max_map_count=10000000")
+        node.account.ssh("sudo sysctl -w fs.file-max=10000000")
+        node.account.ssh("sudo sed -i -e \"s/nofile [0-9]\+/nofile 10000000/g\" /etc/security/limits.conf")
+
         node.account.mkdirs(KafkaService.PERSISTENT_ROOT)
         prop_file = self.prop_file(node)
         self.logger.info("kafka.properties:")
