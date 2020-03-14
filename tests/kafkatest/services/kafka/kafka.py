@@ -253,8 +253,11 @@ class KafkaService(KafkaPathResolverMixin, JmxMixin, Service):
         cmd += "export KAFKA_LOG4J_OPTS=\"-Dlog4j.configuration=file:%s\"; " % self.LOG4J_CONFIG
         heap_kafka_opts = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=%s" % \
                           self.logs["kafka_heap_dump_file"]["path"]
+        prod_kafka_opts = ("-Xms20g -Xmx20g -XX:MetaspaceSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=20 "
+                           "-XX:InitiatingHeapOccupancyPercent=35 -XX:G1HeapRegionSize=16M "
+                           "-XX:MinMetaspaceFreeRatio=50 -XX:MaxMetaspaceFreeRatio=80")
         other_kafka_opts = self.security_config.kafka_opts.strip('\"')
-        cmd += "export KAFKA_OPTS=\"%s %s\"; " % (heap_kafka_opts, other_kafka_opts)
+        cmd += "export KAFKA_OPTS=\"%s %s %s\"; " % (heap_kafka_opts, prod_kafka_opts, other_kafka_opts)
         cmd += "%s %s 1>> %s 2>> %s &" % \
                (self.path.script("kafka-server-start.sh", node),
                 KafkaService.CONFIG_FILE,
